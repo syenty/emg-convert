@@ -1,7 +1,6 @@
 const express = require("express")
 const fileUpload = require('express-fileupload')
 const cors = require('cors')
-const fs = require('fs')
 
 const keys = require("./json/keys.json")
 
@@ -35,12 +34,21 @@ app.post("/file/receive", (req, res) => {
 
         if(await cmdUtil.convertShpf(noExtFileName)){
             if(await cmdUtil.convertHpf(noExtFileName)){
-                res.status(200).send("finish!")
-                cmdUtil.deleteDoc(noExtFileName)
+                res.status(200).send("convert finish!")
+                cmdUtil.sendFile(noExtFileName)
+                // cmdUtil.deleteDoc(noExtFileName)
             } else res.status(500).send("hpf error...")
         } else res.status(500).send("shpf error...")
         
     })
+
+})
+
+app.post("/file/excel", (req, res) => {
+
+    console.log("excel comes")
+    console.log(req.params)
+    // res.status(200).send("get excel")
 
 })
 
