@@ -9,18 +9,20 @@ const keys = require("./json/keys.json")
 const dbProperties = require("./json/database-properties.json")
 
 const dbConfig = require('./database')
-const conn = dbConfig.init()
-dbConfig.connect(conn)
+
+const pool = dbConfig.init()
 
 const app = express()
 
 app.use(cors())
 app.use(fileUpload())
+// app.use(express.urlencoded({ extended: false }))
+// app.use(express.json())
 
 const CmdUtil = require('./lib/cmdUtil')
 const cmdUtil = new CmdUtil
 
-app.post("/file/receive", async (req, res) => {
+app.post("/file/receive", (req, res) => {
 
 	// const { files: { file } } = req
     
@@ -40,15 +42,20 @@ app.post("/file/receive", async (req, res) => {
     console.log(`fileSize : ${fileSize}`)
 
     // res.status(200).send("receive finish")
+    // console.log(req)
 
     const promise1 = new Promise((resolve, reject) => {
-        conn.query(dbProperties.insertSql, [body.userId, body.activityDate, "CONNECTED"], function(err) {
-            if(err) {
-                conn.destroy()
-                reject(Error("1. insert fail"))
-            }else{
-                resolve(true)
-            }
+        pool.getConnection((err, conn) => {
+            if(err) throw err
+            conn.query(dbProperties.insertSql, [body.userId, body.activityDate, "CONNECTED"], function(err) {
+                if(err) {
+                    conn.release()
+                    reject(Error("1. insert fail | " + err))
+                }else{
+                    conn.commit()
+                    resolve(true)
+                }
+            })
         })
     })
     
@@ -66,13 +73,17 @@ app.post("/file/receive", async (req, res) => {
                     if(await cmdUtil.convertHpf(noExtFileName)){
 
                         const promise2 = new Promise((resolve, reject) => {
-                            conn.query(dbProperties.upadte, ["CONVERTED", body.userId, body.activityDate], function(err) {
-                                if(err) {
-                                    conn.destroy()
-                                    reject(Error("2. update fail"))
-                                }else{
-                                    resolve(true)
-                                }
+                            pool.getConnection((err, conn) => {
+                                if(err) throw err
+                                conn.query(dbProperties.updateSql, ["CONVERTED", body.userId, body.activityDate], function(err) {
+                                    if(err) {
+                                        conn.release()
+                                        reject(Error("2. update fail | " + err))
+                                    }else{
+                                        conn.commit()
+                                        resolve(true)
+                                    }
+                                })
                             })
                         })
 
@@ -82,10 +93,30 @@ app.post("/file/receive", async (req, res) => {
 
                                 let form = new FormData({ maxDataSize: Infinity })
                                 form.append("userId",body.userId)
-                                form.append("careCd",body.careCd)
                                 form.append("activityDate",body.activityDate)
-                                form.append("sampling",body.sampling)
+                                // form.append("careCd",body.careCd)
+                                // form.append("sampling",body.sampling)
+
+                                const promise3 = new Promise((resolve, reject) => {
+                                    pool.getConnection((err, conn) => {
+                                        conn.query(dbProperties.updateSql, ["SEND_DATA", body.userId, body.activityDate], function(err) {
+                                            if(err) {
+                                                conn.release()
+                                                reject(Error("3. update fail | " + err))
+                                            }else{
+                                                conn.commit()
+                                                resolve(true)
+                                            }
+                                        })
+                                    })
+                                })
+
+                                promise3
+                                .then(result3 => { if(result3) console.log("send finish") })
+                                .catch(err => console.log(err))
+                                .finally(() => pool.end(err => { if(err) console.log(err) }))
                                 
+                                /*
                                 cmdUtil.sendFile(noExtFileName, form)
                                 .then(sendSuccess => {
                                     if(sendSuccess) {
@@ -93,7 +124,7 @@ app.post("/file/receive", async (req, res) => {
                                         const promise3 = new Promise((resolve, reject) => {
                                             conn.query(dbProperties.upadte, ["SEND_DATA", body.userId, body.activityDate], function(err) {
                                                 if(err) {
-                                                    conn.destroy()
+                                                    conn.release()
                                                     reject(Error("3. update fail"))
                                                 }else{
                                                     resolve(true)
@@ -106,10 +137,11 @@ app.post("/file/receive", async (req, res) => {
                                             if(result3) console.log("send finish")
                                         })
                                         .catch(err => console.log(err))
-                                        .finally(() => conn.destroy())
+                                        .finally(() => conn.release()
 
                                     }
                                 })
+                                */
 
                                 // const promise = new Promise((resolve) => {
         
