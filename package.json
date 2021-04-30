@@ -1,0 +1,29 @@
+{
+  "name": "emg-convert",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/syenty/emg-convert.git"
+  },
+  "author": "syenty",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/syenty/emg-convert/issues"
+  },
+  "homepage": "https://github.com/syenty/emg-convert#readme",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "express-fileupload": "^1.2.1",
+    "form-data": "^4.0.0",
+    "fs": "0.0.1-security",
+    "mysql": "^2.18.1",
+    "node-run-cmd": "^1.0.1"
+  }
+}
