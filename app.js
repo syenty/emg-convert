@@ -3,14 +3,13 @@ const fileUpload = require('express-fileupload')
 const FormData = require("form-data")
 const cors = require('cors')
 const fs = require('fs')
-const axios = require("axios")
 
 const keys = require("./json/keys.json")
 const dbProperties = require("./json/database-properties.json")
 
 const dbConfig = require('./database')
 
-const pool = dbConfig.init()
+let pool
 
 const app = express()
 
@@ -24,12 +23,6 @@ const cmdUtil = new CmdUtil
 
 app.post("/file/receive", (req, res) => {
 
-	// const { files: { file } } = req
-    
-    // const { files: { file: uploadFile } } = req
-
-    // console.log(req)
-
     const body = req.body
 
     const { files: { multipartFile: uploadFile } } = req
@@ -42,7 +35,8 @@ app.post("/file/receive", (req, res) => {
     console.log(`fileSize : ${fileSize}`)
 
     // res.status(200).send("receive finish")
-    // console.log(req)
+
+	pool = dbConfig.init()
 
     const promise1 = new Promise((resolve, reject) => {
         pool.getConnection((err, conn) => {
@@ -94,78 +88,39 @@ app.post("/file/receive", (req, res) => {
                                 let form = new FormData({ maxDataSize: Infinity })
                                 form.append("userId",body.userId)
                                 form.append("activityDate",body.activityDate)
-                                // form.append("careCd",body.careCd)
-                                // form.append("sampling",body.sampling)
+                                form.append("careCd",body.careCd)
+                                form.append("sampling",body.sampling)
 
-                                const promise3 = new Promise((resolve, reject) => {
-                                    pool.getConnection((err, conn) => {
-                                        conn.query(dbProperties.updateSql, ["SEND_DATA", body.userId, body.activityDate], function(err) {
-                                            if(err) {
-                                                conn.release()
-                                                reject(Error("3. update fail | " + err))
-                                            }else{
-                                                conn.commit()
-                                                resolve(true)
-                                            }
-                                        })
-                                    })
-                                })
-
-                                promise3
-                                .then(result3 => { if(result3) console.log("send finish") })
-                                .catch(err => console.log(err))
-                                .finally(() => pool.end(err => { if(err) console.log(err) }))
-                                
-                                /*
                                 cmdUtil.sendFile(noExtFileName, form)
                                 .then(sendSuccess => {
                                     if(sendSuccess) {
 
                                         const promise3 = new Promise((resolve, reject) => {
-                                            conn.query(dbProperties.upadte, ["SEND_DATA", body.userId, body.activityDate], function(err) {
-                                                if(err) {
-                                                    conn.release()
-                                                    reject(Error("3. update fail"))
-                                                }else{
-                                                    resolve(true)
-                                                }
+                                            pool.getConnection((err, conn) => {
+                                                conn.query(dbProperties.updateSql, ["SEND_DATA", body.userId, body.activityDate], function(err) {
+                                                    if(err) {
+                                                        conn.release()
+                                                        reject(Error("3. update fail | " + err))
+                                                    }else{
+                                                        conn.commit()
+                                                        resolve(true)
+                                                    }
+                                                })
                                             })
                                         })
-
+        
                                         promise3
-                                        .then(result3 => {
-                                            if(result3) console.log("send finish")
-                                        })
+                                        .then(result3 => { 
+											if(result3) {
+												console.log("send finish")
+												res.status(200).send("send finish")
+											}
+										})
                                         .catch(err => console.log(err))
-                                        .finally(() => conn.release()
+                                        .finally(() => pool.end(err => { if(err) console.log(err) }))
 
                                     }
                                 })
-                                */
-
-                                // const promise = new Promise((resolve) => {
-        
-                                // 	let form = new FormData({ maxDataSize: Infinity })
-                                // 	form.append("userId",body.userId)
-                                // 	form.append("careCd",body.careCd)
-                                // 	form.append("activityDate",body.activityDate)
-                                // 	form.append("sampling",body.sampling)
-                                    
-                                //     // form.append("uploadFile", fs.createReadStream(uploadFile.data))
-                                // 	form.append("uploadFile", fs.createReadStream(`${keys.docPath}\\${noExtFileName}.csv`))
-                                //     form.pipe(concat({ encoding: 'buffer' }, data => resolve({ data, headers: form.getHeaders() })))
-                                //   })
-                                //   promise.then(({ data, headers }) => axios.post(`${keys.destination}/fatigMonitor/file/accept`, data, { headers })
-                                // 		.then(res => {
-                                // 			if(res.status === 200) cmdUtil.deleteDoc(noExtFileName)
-                                // 		})
-                                // 		)
-                                // 		.catch(err => console.log(err))
-                                    
-                
-                                // res.setHeader('x-Content-Type', 'multipart/form-data; boundary='+form._boundary)
-                                // res.setHeader('Content-Type', 'text/plain')
-                                // form.pipe(res)
 
                             }
 

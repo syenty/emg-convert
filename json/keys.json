@@ -1,5 +1,5 @@
 {
     "delsysPath": "C:\\tmp\\Delsys_File_Utility",
     "docPath": "C:\\tmp\\data",
-    "destination": "http://125.133.65.193:8080"
+    "destination": "http://172.16.1.192:8888"
 }

@@ -1,4 +1,5 @@
 const mysql = require('mysql')
+
 // single
 // const dbInfo = {
 //     host: '172.18.1.190',
