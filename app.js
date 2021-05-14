@@ -30,23 +30,25 @@ app.post("/file/receive", (req, res) => {
     const fileSize = uploadFile.size
     const noExtFileName = fileName.replace(/(.shpf|.hpf|.csv)$/, "")
     
-    console.log(`fileName : ${fileName}`)
+    console.log(`\nfileName : ${fileName}`)
     console.log(`noExtFileName : ${noExtFileName}`)
     console.log(`fileSize : ${fileSize}`)
 
-    // res.status(200).send("receive finish")
+    res.status(200).send("receive finish")
 
 	pool = dbConfig.init()
 
     const promise1 = new Promise((resolve, reject) => {
         pool.getConnection((err, conn) => {
-            if(err) throw err
-            conn.query(dbProperties.insertSql, [body.userId, body.activityDate, "CONNECTED"], function(err) {
+            // if(err) throw err
+			if(err) console.log(err)
+            conn.query(dbProperties.insertSql, [body.userId, body.activityDate, "CONNECTED"], async function(err) {
                 if(err) {
                     conn.release()
                     reject(Error("1. insert fail | " + err))
                 }else{
-                    conn.commit()
+                    await conn.commit()
+                    conn.release()
                     resolve(true)
                 }
             })
@@ -68,13 +70,15 @@ app.post("/file/receive", (req, res) => {
 
                         const promise2 = new Promise((resolve, reject) => {
                             pool.getConnection((err, conn) => {
-                                if(err) throw err
-                                conn.query(dbProperties.updateSql, ["CONVERTED", body.userId, body.activityDate], function(err) {
+                                // if(err) throw err
+								if(err) console.log(err)
+                                conn.query(dbProperties.updateSql, ["CONVERTED", body.userId, body.activityDate], async function(err) {
                                     if(err) {
                                         conn.release()
                                         reject(Error("2. update fail | " + err))
                                     }else{
-                                        conn.commit()
+                                        await conn.commit()
+                                        conn.release()
                                         resolve(true)
                                     }
                                 })
@@ -97,12 +101,15 @@ app.post("/file/receive", (req, res) => {
 
                                         const promise3 = new Promise((resolve, reject) => {
                                             pool.getConnection((err, conn) => {
-                                                conn.query(dbProperties.updateSql, ["SEND_DATA", body.userId, body.activityDate], function(err) {
+												// if(err) throw err
+												if(err) console.log(err)
+                                                conn.query(dbProperties.updateSql, ["SEND_DATA", body.userId, body.activityDate], async function(err) {
                                                     if(err) {
                                                         conn.release()
                                                         reject(Error("3. update fail | " + err))
                                                     }else{
-                                                        conn.commit()
+                                                        await conn.commit()
+														conn.release()
                                                         resolve(true)
                                                     }
                                                 })
@@ -113,11 +120,11 @@ app.post("/file/receive", (req, res) => {
                                         .then(result3 => { 
 											if(result3) {
 												console.log("send finish")
-												res.status(200).send("send finish")
+												// res.status(200).send("send finish")
 											}
 										})
                                         .catch(err => console.log(err))
-                                        .finally(() => pool.end(err => { if(err) console.log(err) }))
+                                        // .finally(() => pool.end(err => { if(err) console.log(err) }))
 
                                     }
                                 })
@@ -137,6 +144,6 @@ app.post("/file/receive", (req, res) => {
 
 })
 
-app.listen(9090, function () {
-    console.log('middleware web server listening on port 9090')
+app.listen(8090, function () {
+    console.log('middleware web server listening on port 8090')
 })
