@@ -3,6 +3,7 @@ const fileUpload = require('express-fileupload')
 const FormData = require("form-data")
 const cors = require('cors')
 const fs = require('fs')
+const { v4: uuidv4 } = require('uuid')
 
 const keys = require("./json/keys.json")
 const dbProperties = require("./json/database-properties.json")
@@ -23,10 +24,14 @@ const cmdUtil = new CmdUtil
 
 app.post("/file/receive", (req, res) => {
 
+    console.log(req)
+
     const body = req.body
+    const uuid = uuidv4()
 
     const { files: { multipartFile: uploadFile } } = req
-    const fileName = uploadFile.name
+    const fileName = `${uuid}_${uploadFile.name}`
+    // const fileName =uploadFile.name
     const fileSize = uploadFile.size
     const noExtFileName = fileName.replace(/(.shpf|.hpf|.csv)$/, "")
     
